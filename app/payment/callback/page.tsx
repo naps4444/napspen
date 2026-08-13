@@ -1,14 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import "./page.css";
 
-type PaymentState =
-  | "checking"
-  | "success"
-  | "failed";
+type PaymentState = "checking" | "success" | "failed";
 
 interface VerificationResult {
   success: boolean;
@@ -28,27 +25,23 @@ interface VerificationResult {
   };
 }
 
-export default function PaymentCallbackPage() {
+function PaymentCallbackContent() {
   const searchParams = useSearchParams();
 
   const [status, setStatus] =
     useState<PaymentState>("checking");
 
-  const [message, setMessage] =
-    useState("");
+  const [message, setMessage] = useState("");
 
   const [transaction, setTransaction] =
-    useState<
-      VerificationResult["transaction"]
-    >();
+    useState<VerificationResult["transaction"]>();
 
   useEffect(() => {
     const verifyPayment = async () => {
       const transactionId =
         searchParams.get("transaction_id");
 
-      const txRef =
-        searchParams.get("tx_ref");
+      const txRef = searchParams.get("tx_ref");
 
       /*
        * Flutterwave should give us transaction_id
@@ -100,9 +93,7 @@ export default function PaymentCallbackPage() {
           );
         }
 
-        setTransaction(
-          data.transaction
-        );
+        setTransaction(data.transaction);
 
         setStatus("success");
       } catch (error) {
@@ -141,9 +132,7 @@ export default function PaymentCallbackPage() {
                 N
               </span>
 
-              <span>
-                NAPSPEN
-              </span>
+              <span>NAPSPEN</span>
             </Link>
           </div>
         </header>
@@ -158,9 +147,7 @@ export default function PaymentCallbackPage() {
               VERIFYING PAYMENT
             </p>
 
-            <h1>
-              Please wait.
-            </h1>
+            <h1>Please wait.</h1>
 
             <p className="success-description">
               We're confirming your payment
@@ -197,9 +184,7 @@ export default function PaymentCallbackPage() {
                 N
               </span>
 
-              <span>
-                NAPSPEN
-              </span>
+              <span>NAPSPEN</span>
             </Link>
 
             <Link
@@ -238,9 +223,7 @@ export default function PaymentCallbackPage() {
             >
               Return to Checkout
 
-              <span>
-                →
-              </span>
+              <span>→</span>
             </Link>
           </div>
         </section>
@@ -260,6 +243,20 @@ export default function PaymentCallbackPage() {
    * SUCCESS
    */
 
+  const amount =
+    Number(transaction?.amount) || 9.99;
+
+  const currency =
+    transaction?.currency || "USD";
+
+  const formattedAmount =
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+
   return (
     <main className="success-page">
       <header className="success-header">
@@ -272,9 +269,7 @@ export default function PaymentCallbackPage() {
               N
             </span>
 
-            <span>
-              NAPSPEN
-            </span>
+            <span>NAPSPEN</span>
           </Link>
 
           <Link
@@ -296,9 +291,7 @@ export default function PaymentCallbackPage() {
             PAYMENT SUCCESSFUL
           </p>
 
-          <h1>
-            You're all set.
-          </h1>
+          <h1>You're all set.</h1>
 
           <p className="success-description">
             Your payment has been successfully
@@ -307,6 +300,7 @@ export default function PaymentCallbackPage() {
           </p>
 
           <div className="success-card">
+            {/* GUIDE COVER */}
             <div className="guide-cover">
               <div className="guide-cover-inner">
                 <span className="cover-brand">
@@ -339,6 +333,7 @@ export default function PaymentCallbackPage() {
               </div>
             </div>
 
+            {/* GUIDE DETAILS */}
             <div className="guide-details">
               <span className="product-label">
                 DIGITAL GUIDE
@@ -357,13 +352,14 @@ export default function PaymentCallbackPage() {
                 decisions.
               </p>
 
+              {/* PURCHASE INFO */}
               <div className="purchase-info">
                 <div>
                   <span>
                     Purchase status
                   </span>
 
-                  <strong>
+                  <strong className="paid-status">
                     Paid
                   </strong>
                 </div>
@@ -374,24 +370,20 @@ export default function PaymentCallbackPage() {
                   </span>
 
                   <strong>
-                    ₦
-                    {Number(
-                      transaction?.amount || 9900
-                    ).toLocaleString()}
+                    {formattedAmount}
                   </strong>
                 </div>
               </div>
 
+              {/* DOWNLOAD */}
               <a
                 href="/guide/practical-retirement-guide.pdf"
                 className="download-button"
-                download
+                download="The-Practical-Retirement-Guide.pdf"
               >
                 Download Your Guide
 
-                <span>
-                  ↓
-                </span>
+                <span>↓</span>
               </a>
 
               <p className="access-note">
@@ -402,6 +394,7 @@ export default function PaymentCallbackPage() {
             </div>
           </div>
 
+          {/* NEXT STEPS */}
           <div className="next-steps">
             <p className="next-label">
               WHAT'S NEXT?
@@ -425,9 +418,7 @@ export default function PaymentCallbackPage() {
             >
               Return to Napspen
 
-              <span>
-                →
-              </span>
+              <span>→</span>
             </Link>
           </div>
         </div>
@@ -441,5 +432,66 @@ export default function PaymentCallbackPage() {
         </p>
       </footer>
     </main>
+  );
+}
+
+/*
+ * PAGE
+ *
+ * Next.js requires a Suspense boundary around
+ * components that use useSearchParams().
+ */
+
+export default function PaymentCallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="success-page">
+          <header className="success-header">
+            <div className="success-header-inner">
+              <Link
+                href="/"
+                className="brand"
+              >
+                <span className="logo-mark">
+                  N
+                </span>
+
+                <span>NAPSPEN</span>
+              </Link>
+            </div>
+          </header>
+
+          <section className="success-section">
+            <div className="success-container">
+              <div className="success-icon">
+                ...
+              </div>
+
+              <p className="success-label">
+                VERIFYING PAYMENT
+              </p>
+
+              <h1>Please wait.</h1>
+
+              <p className="success-description">
+                We're confirming your payment
+                with Flutterwave.
+              </p>
+            </div>
+          </section>
+
+          <footer className="success-footer">
+            <p>
+              © {new Date().getFullYear()}{" "}
+              Napspen Solutions. All rights
+              reserved.
+            </p>
+          </footer>
+        </main>
+      }
+    >
+      <PaymentCallbackContent />
+    </Suspense>
   );
 }
