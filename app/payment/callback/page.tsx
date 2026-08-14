@@ -5,6 +5,16 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import "./page.css";
 
+declare global {
+  interface Window {
+    fbq?: (
+      command: string,
+      eventName: string,
+      parameters?: Record<string, unknown>
+    ) => void;
+  }
+}
+
 type PaymentState = "checking" | "success" | "failed";
 
 interface VerificationResult {
@@ -114,6 +124,105 @@ function PaymentCallbackContent() {
 
     verifyPayment();
   }, [searchParams]);
+
+  /*
+   * META PIXEL PURCHASE EVENT
+   *
+   * Fire only after Flutterwave verification
+   * has successfully completed.
+   *
+   * The transaction ID is used as a browser-level
+   * deduplication key so refreshing the page
+   * does not repeatedly fire the same purchase.
+   */
+
+  useEffect(() => {
+    if (
+      status !== "success" ||
+      !transaction
+    ) {
+      return;
+    }
+
+    if (
+      typeof window === "undefined" ||
+      typeof window.fbq !== "function"
+    ) {
+      console.warn(
+        "Meta Pixel is not available."
+      );
+
+      return;
+    }
+
+    const transactionId =
+      transaction.id?.toString() ||
+      transaction.tx_ref ||
+      searchParams.get("transaction_id");
+
+    if (!transactionId) {
+      console.warn(
+        "No transaction ID available for Meta Purchase event."
+      );
+
+      return;
+    }
+
+    const storageKey =
+      `napspen_meta_purchase_${transactionId}`;
+
+    /*
+     * Prevent the same verified transaction
+     * from being sent repeatedly from the
+     * same browser.
+     */
+
+    if (
+      window.sessionStorage.getItem(
+        storageKey
+      )
+    ) {
+      console.log(
+        "Meta Purchase already tracked for transaction:",
+        transactionId
+      );
+
+      return;
+    }
+
+    const purchaseAmount =
+      Number(transaction.amount) || 9.99;
+
+    const purchaseCurrency =
+      transaction.currency || "USD";
+
+    window.fbq(
+      "track",
+      "Purchase",
+      {
+        value: purchaseAmount,
+        currency: purchaseCurrency,
+      }
+    );
+
+    window.sessionStorage.setItem(
+      storageKey,
+      "true"
+    );
+
+    console.log(
+      "Meta Purchase event fired:",
+      {
+        transactionId,
+        value: purchaseAmount,
+        currency: purchaseCurrency,
+      }
+    );
+  }, [
+    status,
+    transaction,
+    searchParams,
+  ]);
 
   /*
    * VERIFYING
